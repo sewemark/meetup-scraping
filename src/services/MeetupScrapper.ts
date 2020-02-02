@@ -1,4 +1,4 @@
-import puppeteer, { Page } from 'puppeteer';
+import puppeteer, { Page, ElementHandle } from 'puppeteer';
 import { InvalidCredentialsError } from '../errors/InvalidCredentialsError';
 import { UnableToScrapMeetupPage } from '../errors/UnableToScrapMeetupPage';
 import { DownloadUserImageEvent } from '../events/DownloadUserImageEvent';
@@ -11,18 +11,15 @@ export interface IUserBasicInfo {
   email: string;
   meetupUserId: number;
 }
-export interface IMiningResult {
-  page: any;
-}
 
-export interface IUserBasicInfoMiningResult extends IMiningResult {
+export interface IUserBasicInfoMiningResult {
   user: IUserBasicInfo;
 }
 export interface IUserGroupInfo {
   id: string;
   name: string;
 }
-export interface IUserGroupMiningResult extends IMiningResult {
+export interface IUserGroupMiningResult {
   userGroups: IUserGroupInfo[];
   userImageUrl: string;
 }
@@ -32,7 +29,7 @@ export interface IUserEventInfo {
   eventId: number;
   eventName: string;
 }
-export interface IUserEventsMiningResult extends IMiningResult {
+export interface IUserEventsMiningResult {
   userEvents: IUserEventInfo[];
 }
 
@@ -48,7 +45,6 @@ export interface IUserMiningResult {
 }
 export class MeetupScrapper {
   private LOGIN_URL = 'https://secure.meetup.com/login/';
-  private HOME_URL = 'https://www.meetup.com/';
 
   private logger: ILogger;
   private eventEmitter: IMessageBus;
@@ -80,41 +76,33 @@ export class MeetupScrapper {
   }
 
   private async mineUserEvents(page: Page): Promise<IUserEventsMiningResult> {
-    await page.goto(this.HOME_URL, { waitUntil: 'networkidle0' });
-    const groupList = await page.$('#simple-event-filter > li');
-    await groupList.click();
-    const toggleEventRadius = await page.$$('#searchForm > .dropdown > .dropdown-toggle');
-    await toggleEventRadius[1].click();
-    const smallestRadius = await page.$('#simple-radius > li > a');
-    await smallestRadius.click();
     const userEvents = [];
     const rows = await page.$$('li.event-listing');
-    console.log(rows.length);
     for (const row of rows) {
-      try {
-        const debug = await row.evaluate(x => x.innerText);
-        const timeElement = await row.$('.row-item > a:first-child ');
-        const eventTimeStamp = await timeElement.evaluate((x: any) => x.getAttribute('datetime'));
-        const rowsItems = await row.$$('.row-item');
-        const linkElement = await rowsItems[1].$('.chunk > a');
-        const link = await linkElement.evaluate(x => x.getAttribute('href'));
-        const nameElement = await linkElement.$(':first-child');
-        const eventName = await nameElement.evaluate(x => x.innerText);
-        const groupId = link.split('/')[3];
-        const eventId = Number(link.split('/')[5]);
-        userEvents.push({
-          eventName,
-          startDate: eventTimeStamp,
-          eventId,
-          groupId,
-        });
-      } catch (err) {
-        console.log(err);
-      }
+      const userEvent = await this.mineUserEvent(row);
+      userEvents.push(userEvent);
     }
     return {
-      page,
       userEvents,
+    };
+  }
+
+  private async mineUserEvent(row: ElementHandle): Promise<IUserEventInfo> {
+    const timeElement = await row.$('.row-item > a > :first-child ');
+    const eventTimeStamp = await timeElement.evaluate((x: any) => x.getAttribute('datetime'));
+    const rowsItems = await row.$$('.row-item');
+    const linkElement = await rowsItems[1].$('.chunk > a');
+    const link = await linkElement.evaluate((x: any) => x.getAttribute('href'));
+    const nameElement = await linkElement.$(':first-child');
+    const eventName = await nameElement.evaluate((x: any) => x.innerText);
+    const groupId = link.split('/')[3];
+    const eventId = Number(link.split('/')[5]);
+
+    return {
+      eventName,
+      startDate: eventTimeStamp,
+      eventId,
+      groupId,
     };
   }
 
@@ -134,9 +122,8 @@ export class MeetupScrapper {
       });
     }
     return {
-      page,
       userGroups,
-      userImageUrl
+      userImageUrl,
     };
   }
 
@@ -152,7 +139,6 @@ export class MeetupScrapper {
     const meetupUserId = data[3].replace('user', '').replace('edit', '').trim();
     const email = data[5].replace('edit', '').trim();
     return {
-      page,
       user: {
         fullName,
         meetupUserId,
