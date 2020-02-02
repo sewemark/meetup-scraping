@@ -2,6 +2,7 @@ import puppeteer, { Page, Serializable, SerializableOrJSHandle } from 'puppeteer
 import { InvalidCredentialsError } from '../errors/InvalidCredentialsError';
 import { ILogger } from '../logger/ILogger';
 import { IUserCredentials } from './IUserCredentials';
+import { X_OK } from 'constants';
 
 export interface IUserBasicInfo {
   fullName: string;
@@ -54,9 +55,9 @@ export class MeetupScrapper {
 
   public async scrap(userCredentials: IUserCredentials): Promise<IUserMiningResult> {
     const page = await this.login(userCredentials);
+    const userEvents = await this.mineUserEvents(page);
     const userDataMinigResult = await this.mineUserDate(page);
     const userGroups = await this.mineUserGroups(page);
-    const userEvents = await this.mineUserEvents(page);
     return {
       customer: {
         ...userDataMinigResult.user,
@@ -70,23 +71,29 @@ export class MeetupScrapper {
   private async mineUserEvents(page: Page): Promise<IUserEventsMiningResult> {
     await page.goto(this.HOME_URL, { waitUntil: 'networkidle0' });
     const groupList = await page.$('#simple-event-filter > li');
-    groupList.click();
-    const eventLinksElements = await page.$$('.row-item > .chunk > a');
-    const urls = [];
-    console.log(eventLinksElements.length);
-    for (const eventLinksElement of eventLinksElements) {
-      const url = await eventLinksElement.evaluate((x: any) => x.getAttribute('href'));
-      urls.push(url);
-    }
+    await groupList.click();
+    const toggleEventRadius = await page.$$('#searchForm > .dropdown > .dropdown-toggle');
+    console.log(toggleEventRadius);
+    await toggleEventRadius[1].click();
+    const smallestRadius = await page.$('#simple-radius > li > a');
+    await smallestRadius.click();
     const userEvents = [];
-    for (const eventUrl of urls) {
-      await page.goto(eventUrl, { waitUntil: 'networkidle0' });
-      const timeStampElement = await page.$('.eventTimeDisplay > time');
-      const eventTimeStamp = await timeStampElement.evaluate((x: any) => x.getAttribute('datetime'));
-      const eventNameElement = await page.$('.pageHead-headline');
-      const eventName = await eventNameElement.evaluate((x: any) => x.innerText);
-      const groupId = eventUrl.split('/')[3];
-      const eventId = eventUrl.split('/')[5];
+    const rows = await page.$$('.event-listing-container > .row');
+    for (const row of rows) {
+      const timeElement = await row.$('.row-item > a:first-child ');
+      const eventTimeStamp = await timeElement.evaluate((x: any) => x.getAttribute('datetime'));
+      const rowsItems = await row.$$('.row-item');
+      const test = await rowsItems[1].evaluate(x => x.innerText);
+      console.log(test);
+      const chunkElement = await rowsItems[1].$('.chunk');
+      console.log(chunkElement);
+      const linkElement = await chunkElement.$('a');
+      const link = await linkElement.evaluate(x => x.getAttribute('href'));
+      const nameElement = await linkElement.$('span');
+      const eventName = await nameElement.evaluate(x => x.innerText);
+      console.log(link.split('/'));
+      const groupId = link.split('/')[3];
+      const eventId = link.split('/')[5];
       userEvents.push({
         eventName,
         startDate: new Date(eventTimeStamp),
