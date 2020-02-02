@@ -73,33 +73,34 @@ export class MeetupScrapper {
     const groupList = await page.$('#simple-event-filter > li');
     await groupList.click();
     const toggleEventRadius = await page.$$('#searchForm > .dropdown > .dropdown-toggle');
-    console.log(toggleEventRadius);
     await toggleEventRadius[1].click();
     const smallestRadius = await page.$('#simple-radius > li > a');
     await smallestRadius.click();
     const userEvents = [];
-    const rows = await page.$$('.event-listing-container > .row');
+    const rows = await page.$$('li.event-listing');
+    console.log(rows.length);
     for (const row of rows) {
-      const timeElement = await row.$('.row-item > a:first-child ');
-      const eventTimeStamp = await timeElement.evaluate((x: any) => x.getAttribute('datetime'));
-      const rowsItems = await row.$$('.row-item');
-      const test = await rowsItems[1].evaluate(x => x.innerText);
-      console.log(test);
-      const chunkElement = await rowsItems[1].$('.chunk');
-      console.log(chunkElement);
-      const linkElement = await chunkElement.$('a');
-      const link = await linkElement.evaluate(x => x.getAttribute('href'));
-      const nameElement = await linkElement.$('span');
-      const eventName = await nameElement.evaluate(x => x.innerText);
-      console.log(link.split('/'));
-      const groupId = link.split('/')[3];
-      const eventId = link.split('/')[5];
-      userEvents.push({
-        eventName,
-        startDate: new Date(eventTimeStamp),
-        eventId,
-        groupId,
-      });
+      try {
+        const debug = await row.evaluate(x => x.innerText);
+        const timeElement = await row.$('.row-item > a:first-child ');
+        const eventTimeStamp = await timeElement.evaluate((x: any) => x.getAttribute('datetime'));
+        const rowsItems = await row.$$('.row-item');
+        const chunkElement = await rowsItems[1].$('.chunk > a');
+        const linkElement = await chunkElement.$('a');
+        const link = await linkElement.evaluate(x => x.getAttribute('href'));
+        const nameElement = await chunkElement.$('a:first-child');
+        const eventName = await nameElement.evaluate(x => x.innerText);
+        const groupId = link.split('/')[3];
+        const eventId = Number(link.split('/')[5]);
+        userEvents.push({
+          eventName,
+          startDate: eventTimeStamp,
+          eventId,
+          groupId,
+        });
+      } catch (err) {
+        console.log(err);
+      }
     }
     return {
       page,
@@ -131,12 +132,9 @@ export class MeetupScrapper {
     const personalTable = await page.$('.D_personalInformation');
     const data: any = await page.$$eval('.D_personalInformation tr td', tds =>
       tds.map(td => {
-        console.log(td);
         return td.innerText;
       }),
     );
-    console.log(personalTable);
-    console.log(data);
     const fullName = data[1].replace(' edit', '').trim();
     const meetupUserId = data[3].replace('user', '').replace('edit', '').trim();
     const email = data[5].replace('edit', '').trim();

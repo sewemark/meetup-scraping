@@ -44,7 +44,7 @@ export class ApiServer {
         username: req.body.username,
         password: req.body.password,
       });
-      console.log(result);
+      //console.log(result);
       return res.status(200).json(result);
     });
     this.app.use((err: any, req: Request, res: Response, next: any) =>
