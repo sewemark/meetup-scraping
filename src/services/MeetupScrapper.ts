@@ -88,9 +88,11 @@ export class MeetupScrapper {
   }
 
   private async mineUserEvent(row: ElementHandle): Promise<IUserEventInfo> {
-    const timeElement = await row.$('.row-item > a > :first-child ');
-    const eventTimeStamp = await timeElement.evaluate((x: any) => x.getAttribute('datetime'));
     const rowsItems = await row.$$('.row-item');
+
+    const timeStampElement = await rowsItems[0].$('a > :first-child ');
+    const startDate = await timeStampElement.evaluate((x: any) => x.getAttribute('datetime'));
+
     const linkElement = await rowsItems[1].$('.chunk > a');
     const link = await linkElement.evaluate((x: any) => x.getAttribute('href'));
     const nameElement = await linkElement.$(':first-child');
@@ -100,7 +102,7 @@ export class MeetupScrapper {
 
     return {
       eventName,
-      startDate: eventTimeStamp,
+      startDate,
       eventId,
       groupId,
     };
