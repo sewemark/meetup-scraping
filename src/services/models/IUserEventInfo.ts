@@ -1,5 +1,5 @@
 export interface IUserEventInfo {
-    startDate: Date;
+    startDate: string;
     groupId: string;
     eventId: number;
     eventName: string;

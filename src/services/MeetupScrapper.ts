@@ -1,3 +1,4 @@
+import * as dateFormat from 'dateformat';
 import puppeteer, { ElementHandle, Page } from 'puppeteer';
 import { InvalidCredentialsError } from '../errors/InvalidCredentialsError';
 import { UnableToScrapMeetupPage } from '../errors/UnableToScrapMeetupPage';
@@ -67,7 +68,7 @@ export class MeetupScrapper {
 
     return {
       eventName,
-      startDate,
+      startDate: dateFormat.default(startDate, 'yyyy-mmm-dd'),
       eventId,
       groupId,
     };
@@ -150,20 +151,17 @@ export class MeetupScrapper {
   }
 
   private async goToSettingsPage(page: Page): Promise<void> {
-    const profileNavigationToggleButton = await page.$('#profileNav');
-    profileNavigationToggleButton.click();
     const userProfileLink = await page.$$('#nav-account-links li > a');
     const settingUrl = await userProfileLink[2].evaluate((x: any) => x.getAttribute('href'));
     await page.goto(settingUrl, { waitUntil: 'networkidle0' });
   }
 
   private async goToProfilePage(page: Page): Promise<void> {
-    const profileNavigationToggleButton = await page.$('#profileNav');
-    profileNavigationToggleButton.click();
     const userProfileLink = await page.$$('#nav-account-links li > a');
     const profileUrl = await userProfileLink[0].evaluate((x: any) => x.getAttribute('href'));
     await page.goto(profileUrl, { waitUntil: 'networkidle0' });
   }
+
 
   private formatResponse(
     userEvents: IUserEventsMiningResult,
@@ -174,7 +172,7 @@ export class MeetupScrapper {
       customer: {
         ...userDataMinigResult.user,
         groups: userGroups.userGroups,
-        memberSince: userGroups.memberSince,
+        memberSince: dateFormat.default(userGroups.memberSince, 'yyyy-mmm-dd'),
       },
       events: userEvents.userEvents,
     };

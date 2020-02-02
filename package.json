@@ -22,6 +22,7 @@
     "@types/pino": "^5.8.6",
     "@types/puppeteer": "^2.0.0",
     "@types/yup": "^0.26.12",
+    "@types/dateformat": "^3.0.1",
     "chai": "^4.2.0",
     "chakram": "^1.5.0",
     "concurrently": "^4.1.0",
@@ -34,6 +35,7 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "dateformat": "^3.0.3",
     "express": "^4.16.3",
     "inversify": "^5.0.1",
     "inversify-inject-decorators": "^3.1.0",
