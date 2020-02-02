@@ -5,6 +5,7 @@ import { ILogger } from './logger/ILogger';
 import { Logger } from './logger/Logger';
 import { Types } from './Types';
 import express from 'express';
+import { MeetupScrapper } from './services/MeetupScrapper';
 
 (async () => {
     try {
@@ -18,6 +19,7 @@ import express from 'express';
             logger,
             config,
             express(),
+            new MeetupScrapper(logger),
         );
         server.start();
     } catch (err) {
