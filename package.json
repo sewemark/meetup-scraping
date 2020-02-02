@@ -4,12 +4,13 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "build-ts": "tsc",
-    "start": "concurrently --kill-others \"yarn watch-ts\" \"yarn watch-node\"",
     "watch-node": "nodemon dist/index.js",
     "watch-ts": "tsc -w",
+    "start-dev": "concurrently --kill-others \"yarn watch-ts\" \"yarn watch-node\"",
+    "start": "yarn build-ts && yarn server",
+    "build-ts": "tsc",
     "server": "node dist/index.js",
-    "integration-tests": "mocha -r ts-node/register integrationTests/Buses.spec.ts",
+    "tests": "mocha -r ts-node/register integrationTests/Integration.spec.ts",
     "lint": "tslint src/**/*.{ts,tsx}"
   },
   "devDependencies": {
@@ -32,7 +33,6 @@
     "typescript": "^3.6.4"
   },
   "dependencies": {
-    "bull": "^3.12.1",
     "cors": "^2.8.5",
     "express": "^4.16.3",
     "inversify": "^5.0.1",

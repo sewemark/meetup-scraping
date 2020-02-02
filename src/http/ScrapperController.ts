@@ -35,12 +35,11 @@ export class ScrapperController {
 
     private sendErrorResponse(res: Response, err: any): void {
         const httpError = this.getHttpError(err);
-        this.logger.error('ScrapperController', 'getHttpError', err, `Sending error response ${err.constructor}`);
+        this.logger.error('ScrapperController', 'getHttpError', err, `Sending error response`);
         res.status(httpError.responseCode).json(httpError.serialize());
     }
 
     private getHttpError(err: any): HttpError {
-
         switch (err.constructor) {
             case InvalidCredentialsError:
                 return new HttpError(400, 'invalid_login');

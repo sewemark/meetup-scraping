@@ -4,14 +4,23 @@ import { ApiServer } from './ApiServer';
 import { initContainer } from './Bootstrap';
 import { YamlConfigProvider } from './config/YamlConfigProvider';
 import { DownloadUserImageEvent } from './events/DownloadUserImageEvent';
+import { ControllerProvider } from './http/ControllerProvider';
 import { ILogger } from './logger/ILogger';
 import { Logger } from './logger/Logger';
+import { IMessageBus } from './messageBus/IMessageBus';
 import { MeetupScrapper } from './services/MeetupScrapper';
 import { FileDownloadTask } from './tasks/FileDownloadTask';
 import { Types } from './Types';
-import { ControllerProvider } from './http/ControllerProvider';
 
 (async () => {
+    function registerEventListners(logger: ILogger, memoryMessageBus: IMessageBus) {
+        memoryMessageBus.on(DownloadUserImageEvent.EVENT_NAME, (data: DownloadUserImageEvent) => {
+            logger.info(`[Event] ${DownloadUserImageEvent.EVENT_NAME}`, 'ocurred', `event data ${data.userId} ${data.imageUrl}`);
+            const fileDownloadTaks = new FileDownloadTask(logger, data.imageUrl, data.userId);
+            fileDownloadTaks.perform();
+        });
+    }
+
     try {
         const startupLogger = new Logger();
         const configProvider = new YamlConfigProvider(startupLogger);
@@ -20,11 +29,7 @@ import { ControllerProvider } from './http/ControllerProvider';
         const container = initContainer();
         const logger = container.get<ILogger>(Types.Logger);
         const memoryMessageBus = new EventEmitter();
-        memoryMessageBus.on(DownloadUserImageEvent.EVENT_NAME, (data: DownloadUserImageEvent) => {
-            logger.info(`[Event] ${DownloadUserImageEvent.EVENT_NAME}`, 'ocurred', `event data ${data.userId} ${data.imageUrl}`);
-            const fileDownloadTaks = new FileDownloadTask(logger, data.imageUrl, data.userId);
-            fileDownloadTaks.perform();
-        });
+        registerEventListners(logger, memoryMessageBus);
         const meetupScrapper = new MeetupScrapper(logger, memoryMessageBus);
         const server = new ApiServer(
             logger,

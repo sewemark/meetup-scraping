@@ -1,9 +1,8 @@
 import * as bodyParser from 'body-parser';
 import { Express, Request, Response } from 'express';
 import { ServerConfig } from './config/ServerConfig';
-import { ILogger } from './logger/ILogger';
-import { MeetupScrapper } from './services/MeetupScrapper';
 import { IControllerProvider } from './http/IControllerProvider';
+import { ILogger } from './logger/ILogger';
 const cors = require('cors');
 
 export class ApiServer {

@@ -81,7 +81,7 @@ export class MeetupScrapper {
     const userImageUrl = await userImageUrlElement.evaluate((x: any) => x.getAttribute('href'));
 
     const profileContactItems = await page.$$('#D_memberProfileMeta > div > div > p');
-    const memberSince = await profileContactItems[1].evaluate(x => x.innerText);
+    const memberSince = await profileContactItems[1].evaluate((x: any) => x.innerText);
 
     const groupList = await page.$$('#my-meetup-groups-list > div');
     for (const group of groupList) {
@@ -153,7 +153,7 @@ export class MeetupScrapper {
     const profileNavigationToggleButton = await page.$('#profileNav');
     profileNavigationToggleButton.click();
     const userProfileLink = await page.$$('#nav-account-links li > a');
-    const settingUrl = await userProfileLink[2].evaluate(x => x.getAttribute('href'));
+    const settingUrl = await userProfileLink[2].evaluate((x: any) => x.getAttribute('href'));
     await page.goto(settingUrl, { waitUntil: 'networkidle0' });
   }
 
@@ -161,7 +161,7 @@ export class MeetupScrapper {
     const profileNavigationToggleButton = await page.$('#profileNav');
     profileNavigationToggleButton.click();
     const userProfileLink = await page.$$('#nav-account-links li > a');
-    const profileUrl = await userProfileLink[0].evaluate(x => x.getAttribute('href'));
+    const profileUrl = await userProfileLink[0].evaluate((x: any) => x.getAttribute('href'));
     await page.goto(profileUrl, { waitUntil: 'networkidle0' });
   }
 
