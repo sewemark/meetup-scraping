@@ -3,7 +3,7 @@ import * as https from 'https';
 import * as path from 'path';
 import * as url from 'url';
 import { ILogger } from '../logger/ILogger';
-import { IAsyncTask } from './IAsyncTask';
+import { IAsyncTask } from '../messageBus/IAsyncTask';
 
 export class FileDownloadTask implements IAsyncTask {
     private imageUrl: string;
@@ -17,13 +17,17 @@ export class FileDownloadTask implements IAsyncTask {
     }
 
     public perform(): Promise<void> {
-        const imageLocalPath = this.getImagePath();
-        this.logger.info('FileDownloadTask', 'saveImage', `Saving image on file ${imageLocalPath}`);
-        const writeImageStream = fs.createWriteStream(imageLocalPath);
-        https.get(this.imageUrl, (response: any) => {
-            response.pipe(writeImageStream);
-        });
-        return Promise.resolve();
+        try {
+            const imageLocalPath = this.getImagePath();
+            this.logger.info('FileDownloadTask', 'saveImage', `Saving image on file ${imageLocalPath}`);
+            const writeImageStream = fs.createWriteStream(imageLocalPath);
+            https.get(this.imageUrl, (response: any) => {
+                response.pipe(writeImageStream);
+            });
+            return Promise.resolve();
+        } catch (err) {
+            this.logger.error('FileDownloadTask', 'saveImage', err, 'Unable to save file');
+        }
     }
 
     private getImagePath(): string {

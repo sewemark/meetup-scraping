@@ -1,2 +1,1 @@
-port: 8081
-databaseConnectionString: 'mongodb://localhost/appDb'
+port: 3000

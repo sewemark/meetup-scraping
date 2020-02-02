@@ -1,14 +1,15 @@
+import { EventEmitter } from 'events';
+import express from 'express';
 import { ApiServer } from './ApiServer';
 import { initContainer } from './Bootstrap';
 import { YamlConfigProvider } from './config/YamlConfigProvider';
+import { DownloadUserImageEvent } from './events/DownloadUserImageEvent';
 import { ILogger } from './logger/ILogger';
 import { Logger } from './logger/Logger';
-import { Types } from './Types';
-import express from 'express';
 import { MeetupScrapper } from './services/MeetupScrapper';
-import { EventEmitter } from 'events';
-import { DownloadUserImageEvent } from './events/DownloadUserImageEvent';
-import { FileDownloadTask } from './messageBus/FIleDownloadTask';
+import { FileDownloadTask } from './tasks/FileDownloadTask';
+import { Types } from './Types';
+import { ControllerProvider } from './http/ControllerProvider';
 
 (async () => {
     try {
@@ -24,11 +25,12 @@ import { FileDownloadTask } from './messageBus/FIleDownloadTask';
             const fileDownloadTaks = new FileDownloadTask(logger, data.imageUrl, data.userId);
             fileDownloadTaks.perform();
         });
+        const meetupScrapper = new MeetupScrapper(logger, memoryMessageBus);
         const server = new ApiServer(
             logger,
             config,
             express(),
-            new MeetupScrapper(logger, memoryMessageBus),
+            new ControllerProvider(logger, meetupScrapper),
         );
         server.start();
     } catch (err) {

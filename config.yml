@@ -1,2 +1,1 @@
-port: 8082
-databaseConnectionString: connectionString
+port: 3000

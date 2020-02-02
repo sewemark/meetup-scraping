@@ -1,5 +1,6 @@
 import puppeteer, { Page } from 'puppeteer';
 import { InvalidCredentialsError } from '../errors/InvalidCredentialsError';
+import { UnableToScrapMeetupPage } from '../errors/UnableToScrapMeetupPage';
 import { DownloadUserImageEvent } from '../events/DownloadUserImageEvent';
 import { ILogger } from '../logger/ILogger';
 import { IMessageBus } from '../messageBus/IMessageBus';
@@ -172,10 +173,16 @@ export class MeetupScrapper {
         page.click('#loginFormSubmit'),
         page.waitForNavigation({ waitUntil: 'networkidle0' }),
       ]);
+      if (page.url().includes('login')) {
+        throw new InvalidCredentialsError();
+      }
       return page;
     } catch (err) {
+      if (err instanceof InvalidCredentialsError) {
+        throw err;
+      }
       this.logger.error('MeetupScrapper', 'login', err, 'Cannot login with provided credentials');
-      throw new InvalidCredentialsError();
+      throw new UnableToScrapMeetupPage();
     }
   }
 
