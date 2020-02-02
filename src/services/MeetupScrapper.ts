@@ -1,8 +1,9 @@
-import puppeteer, { Page, Serializable, SerializableOrJSHandle } from 'puppeteer';
+import puppeteer, { Page } from 'puppeteer';
 import { InvalidCredentialsError } from '../errors/InvalidCredentialsError';
+import { DownloadUserImageEvent } from '../events/DownloadUserImageEvent';
 import { ILogger } from '../logger/ILogger';
+import { IMessageBus } from '../messageBus/IMessageBus';
 import { IUserCredentials } from './IUserCredentials';
-import { X_OK } from 'constants';
 
 export interface IUserBasicInfo {
   fullName: string;
@@ -22,6 +23,7 @@ export interface IUserGroupInfo {
 }
 export interface IUserGroupMiningResult extends IMiningResult {
   userGroups: IUserGroupInfo[];
+  userImageUrl: string;
 }
 export interface IUserEventInfo {
   startDate: Date;
@@ -48,8 +50,13 @@ export class MeetupScrapper {
   private HOME_URL = 'https://www.meetup.com/';
 
   private logger: ILogger;
+  private eventEmitter: IMessageBus;
 
-  constructor(logger: ILogger) {
+  constructor(
+    logger: ILogger,
+    eventEmitter: IMessageBus,
+  ) {
+    this.eventEmitter = eventEmitter;
     this.logger = logger;
   }
 
@@ -58,6 +65,9 @@ export class MeetupScrapper {
     const userEvents = await this.mineUserEvents(page);
     const userDataMinigResult = await this.mineUserDate(page);
     const userGroups = await this.mineUserGroups(page);
+    this.eventEmitter.emit(
+      DownloadUserImageEvent.EVENT_NAME,
+      new DownloadUserImageEvent(userGroups.userImageUrl, userDataMinigResult.user.meetupUserId.toString()));
     return {
       customer: {
         ...userDataMinigResult.user,
@@ -85,10 +95,9 @@ export class MeetupScrapper {
         const timeElement = await row.$('.row-item > a:first-child ');
         const eventTimeStamp = await timeElement.evaluate((x: any) => x.getAttribute('datetime'));
         const rowsItems = await row.$$('.row-item');
-        const chunkElement = await rowsItems[1].$('.chunk > a');
-        const linkElement = await chunkElement.$('a');
+        const linkElement = await rowsItems[1].$('.chunk > a');
         const link = await linkElement.evaluate(x => x.getAttribute('href'));
-        const nameElement = await chunkElement.$('a:first-child');
+        const nameElement = await linkElement.$(':first-child');
         const eventName = await nameElement.evaluate(x => x.innerText);
         const groupId = link.split('/')[3];
         const eventId = Number(link.split('/')[5]);
@@ -111,6 +120,8 @@ export class MeetupScrapper {
   private async mineUserGroups(page: Page): Promise<IUserGroupMiningResult> {
     const userGroups = [];
     await this.goToProfilePage(page);
+    const userImageLinkElment = await page.$('#member-profile-photo > a');
+    const userImageUrl = await userImageLinkElment.evaluate(x => x.getAttribute('href'));
     const groupList = await page.$$('#my-meetup-groups-list > div');
     for (const group of groupList) {
       const descriptionLinkElement = await group.$('.figureset-description > h4 > a');
@@ -124,6 +135,7 @@ export class MeetupScrapper {
     return {
       page,
       userGroups,
+      userImageUrl
     };
   }
 
