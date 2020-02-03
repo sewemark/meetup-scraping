@@ -1,6 +1,7 @@
-Meetup scrapper
+Meetup.com scrapper
 
 Port can be set in config.yml
+
 To start:
 yarn start
 
@@ -10,4 +11,3 @@ yarn start-dev
 Integration tests:
 yarn tests
 
-curl test:
